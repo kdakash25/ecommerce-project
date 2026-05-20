@@ -6,50 +6,84 @@ on:
       - main
 
 jobs:
-
   build-and-deploy:
-
     runs-on: ubuntu-latest
 
     steps:
 
-    - name: Checkout Code
-      uses: actions/checkout@v4
+      # Checkout Repository
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
+      # Debug Project Structure
+      - name: Verify Files
+        run: |
+          pwd
+          ls -la
+          ls -la backend
+          ls -la kubernetes
 
-    - name: Login to DockerHub
-      uses: docker/login-action@v3
-      with:
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
+      # Setup Docker Buildx
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-    - name: Build Docker Image
-      run: |
-        docker build -t ${{ secrets.DOCKER_USERNAME }}/ecommerce-app ./backend
+      # DockerHub Login
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
-    - name: Push Docker Image
-      run: |
-        docker push ${{ secrets.DOCKER_USERNAME }}/ecommerce-app
+      # Build Docker Image
+      - name: Build Docker Image
+        run: |
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/ecommerce-app:latest ./backend
 
-    - name: Configure kubectl
-      uses: azure/setup-kubectl@v4
+      # Push Docker Image
+      - name: Push Docker Image
+        run: |
+          docker push ${{ secrets.DOCKER_USERNAME }}/ecommerce-app:latest
 
-    - name: Set Kubernetes Config
-      run: |
-        mkdir -p $HOME/.kube
-        echo "${{ secrets.KUBECONFIG }}" > $HOME/.kube/config
+      # Install kubectl
+      - name: Configure kubectl
+        uses: azure/setup-kubectl@v4
 
-    - name: Deploy to Kubernetes
-      run: |
-        kubectl apply -f kubernetes/
+      # Configure kubeconfig
+      - name: Set Kubernetes Config
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG }}" > $HOME/.kube/config
 
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v3
+      # Verify Kubernetes Cluster
+      - name: Verify Cluster
+        run: |
+          kubectl get nodes
 
-    - name: Terraform Init
-      run: terraform init
+      # Deploy Kubernetes Manifests
+      - name: Deploy to Kubernetes
+        run: |
+          kubectl apply -f kubernetes/
 
-    - name: Terraform Apply
-      run: terraform apply -auto-approve    
+      # Setup Terraform
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      # Terraform Init
+      - name: Terraform Init
+        working-directory: terraform
+        run: terraform init
+
+      # Terraform Validate
+      - name: Terraform Validate
+        working-directory: terraform
+        run: terraform validate
+
+      # Terraform Plan
+      - name: Terraform Plan
+        working-directory: terraform
+        run: terraform plan
+
+      # Terraform Apply
+      - name: Terraform Apply
+        working-directory: terraform
+        run: terraform apply -auto-approve
