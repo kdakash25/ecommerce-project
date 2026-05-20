@@ -19,6 +19,6 @@ spec:
     spec:
       containers:
       - name: ecommerce-container
-        image: username/ecommerce-app
+        image: DOCKER_USERNAME/ecommerce-app:latest
         ports:
         - containerPort: 3000
