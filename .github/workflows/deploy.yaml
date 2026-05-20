@@ -23,13 +23,12 @@ jobs:
           ls -la
           ls -la backend
           ls -la kubernetes
-          ls -la terraform
 
       # Setup Docker Buildx
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # Verify Docker Username Secret
+      # Verify Docker Username
       - name: Verify Docker Username
         run: |
           echo "Docker Username = ${{ secrets.DOCKER_USERNAME }}"
@@ -55,42 +54,18 @@ jobs:
       - name: Setup kubectl
         uses: azure/setup-kubectl@v4
 
-      # Configure Kubernetes Access
+      # Configure Kubernetes
       - name: Configure Kubernetes
         run: |
           mkdir -p $HOME/.kube
           echo "${{ secrets.KUBECONFIG }}" > $HOME/.kube/config
 
-      # Verify Kubernetes Cluster
+      # Verify Cluster
       - name: Verify Kubernetes Cluster
         run: |
           kubectl get nodes
 
-      # Deploy Kubernetes Manifests
+      # Deploy to Kubernetes
       - name: Deploy to Kubernetes
         run: |
           kubectl apply -f kubernetes/
-
-      # Setup Terraform
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-
-      # Terraform Init
-      - name: Terraform Init
-        working-directory: terraform
-        run: terraform init
-
-      # Terraform Validate
-      - name: Terraform Validate
-        working-directory: terraform
-        run: terraform validate
-
-      # Terraform Plan
-      - name: Terraform Plan
-        working-directory: terraform
-        run: terraform plan
-
-      # Terraform Apply
-      - name: Terraform Apply
-        working-directory: terraform
-        run: terraform apply -auto-approve
